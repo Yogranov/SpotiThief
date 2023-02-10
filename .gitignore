@@ -1,0 +1,5 @@
+__pycache__
+venv
+playlist.json
+exported_playlist
+test.py
