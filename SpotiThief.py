@@ -21,7 +21,7 @@ class SpotiThief:
         self.add_youtube_url_to_playlist()
         self.__cache_playlist()
 
-        songs_to_remove = self.__get_songs_to_remove(media_location)
+        songs_to_remove = self.get_songs_to_remove(media_location)
         self.__delete_songs(songs_to_remove, media_location)
 
         self.export_playlist_to_mp3()
@@ -113,7 +113,7 @@ class SpotiThief:
                 print(f"Song {song['song_name']} has no youtube url")
                 continue
             
-            if os.path.isfile(f"{song_name}.mp3"):
+            if os.path.isfile(f"{location}/{song_name}.mp3"):
                 print(f"Song {song_name} already exists")
                 continue
 
@@ -144,7 +144,41 @@ class SpotiThief:
         with open(file_name, "r", encoding="utf-8") as f:
             self.song_list = json.load(f)
 
+    def get_songs_to_remove(self, location: str = DEFAULT_DOWNLOAD_PATH):
+        if not os.path.isdir(location):
+            return []
 
+        songs_on_disk = []
+        for song in os.listdir(location):
+            songs_on_disk.append(song.split(".mp3")[0])
+
+        songs_to_delete = []
+        for song_on_disk in songs_on_disk:
+            for song in self.song_list:
+                if self.__get_full_song_name(song) == song_on_disk:
+                    break
+            else:
+                songs_to_delete.append(song_on_disk + ".mp3")
+
+        return songs_to_delete
+
+    def get_new_songs(self, location: str = DEFAULT_DOWNLOAD_PATH):
+        if not os.path.isdir(location):
+            return []
+
+        songs_on_disk = []
+        for song in os.listdir(location):
+            songs_on_disk.append(song.split(".mp3")[0])
+
+        new_songs = []
+        for song in self.song_list:
+            for song_on_disk in songs_on_disk:
+                if self.__get_full_song_name(song) == song_on_disk:
+                    break
+            else:
+                new_songs.append(song)
+
+        return new_songs
 
     ############ Private ############
     
@@ -252,42 +286,6 @@ class SpotiThief:
         options.add_argument("--show-capture=no")
 
         return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-    def __get_new_songs(self, location: str = DEFAULT_DOWNLOAD_PATH):
-        if not os.path.isdir(location):
-            return []
-
-        songs_on_disk = []
-        for song in os.listdir(location):
-            songs_on_disk.append(song.split(".mp3")[0])
-
-        new_songs = []
-        for song in self.song_list:
-            for song_on_disk in songs_on_disk:
-                if self.__get_full_song_name(song) == song_on_disk:
-                    break
-            else:
-                new_songs.append(song)
-
-        return new_songs
-
-    def __get_songs_to_remove(self, location: str = DEFAULT_DOWNLOAD_PATH):
-        if not os.path.isdir(location):
-            return []
-
-        songs_on_disk = []
-        for song in os.listdir(location):
-            songs_on_disk.append(song.split(".mp3")[0])
-
-        songs_to_delete = []
-        for song_on_disk in songs_on_disk:
-            for song in self.song_list:
-                if self.__get_full_song_name(song) == song_on_disk:
-                    break
-            else:
-                songs_to_delete.append(song_on_disk + ".mp3")
-
-        return songs_to_delete
 
     def __get_full_song_name(self, song):
         return song['song_name'] + " - " + song['artist']
